@@ -6,7 +6,7 @@ import os
 from configs import (TEMPERATURE, HISTORY_LEN, PROMPT_TEMPLATES,
                      DEFAULT_KNOWLEDGE_BASE, DEFAULT_SEARCH_ENGINE, SUPPORT_AGENT_MODEL)
 from typing import List, Dict
-import requests
+
 
 chat_box = ChatBox(
     assistant_avatar=os.path.join(
@@ -56,16 +56,11 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
                     text = f"{text} 当前知识库： `{cur_kb}`。"
             st.toast(text)
 
-        # dialogue_modes = ["LLM 对话",
-        #                     "知识库问答",
-        #                     "搜索引擎问答",
-        #                     "自定义Agent问答",
-        #                     ]
-
-        dialogue_modes = ["医疗问答",
-                          "用药建议",
-                          "影像分析"
-                          ]
+        dialogue_modes = ["LLM 对话",
+                            "知识库问答",
+                            "搜索引擎问答",
+                            "自定义Agent问答",
+                            ]
         dialogue_mode = st.selectbox("请选择对话模式：",
                                      dialogue_modes,
                                      index=0,
@@ -118,17 +113,11 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
                     st.success(msg)
                     st.session_state["prev_llm_model"] = llm_model
 
-        # index_prompt = {
-        #     "LLM 对话": "llm_chat",
-        #     "自定义Agent问答": "agent_chat",
-        #     "搜索引擎问答": "search_engine_chat",
-        #     "知识库问答": "knowledge_base_chat",
-        # }
-
         index_prompt = {
-            "医疗问答": "llm_chat",
-            "用药建议": "knowledge_base_chat",
-            "影像分析": "xray_analysis"
+            "LLM 对话": "llm_chat",
+            "自定义Agent问答": "agent_chat",
+            "搜索引擎问答": "search_engine_chat",
+            "知识库问答": "knowledge_base_chat",
         }
         prompt_templates_kb_list = list(PROMPT_TEMPLATES[index_prompt[dialogue_mode]].keys())
         prompt_template_name = prompt_templates_kb_list[0]
@@ -153,59 +142,7 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
         def on_kb_change():
             st.toast(f"已加载知识库： {st.session_state.selected_kb}")
 
-        if dialogue_mode == "影像分析":
-            url = "http://0.0.0.0:7861/llm_model/stop"
-            headers = {
-                'accept': 'application/json',
-                'Content-Type': 'application/json'
-            }
-            data = {
-                "model_name": "chatglm2-6b",
-                "controller_address": "http://127.0.0.1:20001"
-            }
-            print(f"send post request")
-            try:
-                res = requests.post(url=url, headers=headers, json=data)
-                print(f"停止当前运行的chatglm2，结果为：{res.json()}")
-                import subprocess
-                print(subprocess.Popen(["/bin/bash", "/home/zl/code/run_xrayglm.sh"]))
-            except Exception as e:
-                print(e)
-
-
-        # else:
-        #     url = "http://0.0.0.0:7861/llm_model/list_running_models"
-        #     headers = {
-        #         'accept': 'application/json',
-        #         'Content-Type': 'application/json'
-        #     }
-        #     data = {
-        #         "controller_address": "http://127.0.0.1:20001",
-        #         "placeholder": "string"
-        #     }
-        #     res = requests.post(url=url, headers=headers, json=data)
-        #     # 判断chatglm2是否启动
-        #     if not res.json()["data"]["chatglm2-6b"]:
-        #         from startup import get_model_worker_config,Process,mp,run_model_worker
-        #
-        #         model_name = "chatglm2-6b"
-        #         config = get_model_worker_config(model_name)
-        #         if not config.get("online_api"):
-        #             manager = mp.Manager
-        #             queue = manager.Queue()
-        #             e = manager.Event()
-        #             process = Process(
-        #                 target=run_model_worker,
-        #                 name=f"model_worker - {model_name}",
-        #                 kwargs=dict(model_name=model_name,
-        #                             controller_address="http://localhost:21001",
-        #                             log_level="INFO",
-        #                             q=queue,
-        #                             started_event=e),
-        #                 daemon=True,
-        #             )
-
-        if dialogue_mode == "用药建议":
+        if dialogue_mode == "知识库问答":
             with st.expander("知识库配置", True):
                 kb_list = api.list_knowledge_bases()
                 index = 0
@@ -237,17 +174,15 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
                 )
                 se_top_k = st.number_input("匹配搜索结果条数：", 1, 20, SEARCH_ENGINE_TOP_K)
 
-
-
     # Display chat messages from history on app rerun
     chat_box.output_messages()
 
     chat_input_placeholder = "请输入对话内容，换行请使用Shift+Enter "
 
     def on_feedback(
-            feedback,
-            chat_history_id: str = "",
-            history_index: int = -1,
+        feedback,
+        chat_history_id: str = "",
+        history_index: int = -1,
     ):
         reason = feedback["text"]
         score_int = chat_box.set_feedback(feedback=feedback, history_index=history_index)
@@ -264,7 +199,7 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
     if prompt := st.chat_input(chat_input_placeholder, key="prompt"):
         history = get_messages_history(history_len)
         chat_box.user_say(prompt)
-        if dialogue_mode == "医疗问答":
+        if dialogue_mode == "LLM 对话":
             chat_box.ai_say("正在思考...")
             text = ""
             chat_history_id = ""
@@ -283,13 +218,12 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
 
             metadata = {
                 "chat_history_id": chat_history_id,
-            }
+                }
             chat_box.update_msg(text, streaming=False, metadata=metadata)  # 更新最终的字符串，去除光标
             chat_box.show_feedback(**feedback_kwargs,
                                    key=chat_history_id,
                                    on_submit=on_feedback,
-                                   kwargs={"chat_history_id": chat_history_id,
-                                           "history_index": len(chat_box.history) - 1})
+                                   kwargs={"chat_history_id": chat_history_id, "history_index": len(chat_box.history) - 1})
 
         elif dialogue_mode == "自定义Agent问答":
             if not any(agent in llm_model for agent in SUPPORT_AGENT_MODEL):
@@ -329,7 +263,7 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
                     chat_box.update_msg(text, element_index=1)
             chat_box.update_msg(ans, element_index=0, streaming=False)
             chat_box.update_msg(text, element_index=1, streaming=False)
-        elif dialogue_mode == "用药建议":
+        elif dialogue_mode == "知识库问答":
             chat_box.ai_say([
                 f"正在查询知识库 `{selected_kb}` ...",
                 Markdown("...", in_expander=True, title="知识库匹配结果", state="complete"),

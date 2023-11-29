@@ -311,11 +311,19 @@ class KnowledgeFile:
                 text_splitter = make_text_splitter(splitter_name=self.text_splitter_name, chunk_size=chunk_size,
                                                    chunk_overlap=chunk_overlap)
             if self.text_splitter_name == "MarkdownHeaderTextSplitter":
-                docs = text_splitter.split_text(docs[0].page_content)
+                with open(self.filepath) as f:
+                    lines = f.read()
+                    docs = text_splitter.split_text(lines)
                 for doc in docs:
+                    prefix = ""
+                    for t in doc.metadata.values():
+                        prefix += t + "\n"
+                    doc.page_content = prefix + "\n" + doc.page_content
+
                     # 如果文档有元数据
                     if doc.metadata:
-                        doc.metadata["source"] = os.path.basename(self.filepath)
+                        doc.metadata["source"] = self.filepath
+
             else:
                 docs = text_splitter.split_documents(docs)
 
@@ -402,9 +410,25 @@ def files2docs_in_thread(
 if __name__ == "__main__":
     from pprint import pprint
 
-    kb_file = KnowledgeFile(
-        filename="/home/congyin/Code/Project_Langchain_0814/Langchain-Chatchat/knowledge_base/csv1/content/gm.csv",
-        knowledge_base_name="samples")
+    # kb_file = KnowledgeFile(
+    #     filename="/home/congyin/Code/Project_Langchain_0814/Langchain-Chatchat/knowledge_base/csv1/content/gm.csv",
+    #     knowledge_base_name="samples")
     # kb_file.text_splitter_name = "RecursiveCharacterTextSplitter"
-    docs = kb_file.file2docs()
+    # docs = kb_file.file2docs()
     # pprint(docs[-1])
+
+    text_splitter = make_text_splitter(splitter_name="MarkdownHeaderTextSplitter", chunk_size=250,
+                       chunk_overlap=50)
+    docs = text_splitter.split_text("""
+# 连花清瘟胶囊
+## 成份
+连翘、金银花、炙麻黄、炒苦杏仁、石膏、板蓝根、绵马贯众、鱼腥草、广藿香、大黄、红景天、薄荷脑、甘草。辅料为：淀粉。
+
+
+## 用法用量
+口服。一次4粒，一日3次。
+    """)
+    print(docs)
+    my_doc = {'head1': '连花清瘟胶囊', 'head2': '成份'}
+    for t in my_doc.values():
+        print(t)

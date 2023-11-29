@@ -33,7 +33,7 @@ if __name__ == "__main__":
         "知识库管理": {
             "icon": "hdd-stack",
             "func": knowledge_base_page,
-        },
+        }
     }
 
     with st.sidebar:

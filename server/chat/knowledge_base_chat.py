@@ -76,6 +76,7 @@ async def knowledge_base_chat(query: str = Body(..., description="用户输入",
         source_documents = []
         doc_path = get_doc_path(knowledge_base_name)
         for inum, doc in enumerate(docs):
+            print(f"doc: {doc}")
             filename = Path(doc.metadata["source"]).resolve().relative_to(doc_path)
             parameters = urlencode({"knowledge_base_name": knowledge_base_name, "file_name":filename})
             base_url = request.base_url
@@ -106,3 +107,7 @@ async def knowledge_base_chat(query: str = Body(..., description="用户输入",
                                                           model_name=model_name,
                                                           prompt_name=prompt_name),
                              media_type="text/event-stream")
+
+if __name__ == '__main__':
+    docs = search_docs("忌烟、酒及辛辣、生冷、油腻食物。", "test", 3, 0.5)
+    print(docs)
