@@ -63,6 +63,7 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
         #                     ]
 
         dialogue_modes = ["医疗问答",
+                          "医疗问答-搜索引擎",
                           "用药建议",
                           "影像分析"
                           ]
@@ -127,6 +128,7 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
 
         index_prompt = {
             "医疗问答": "llm_chat",
+            "医疗问答-搜索引擎": "search_engine_chat",
             "用药建议": "knowledge_base_chat",
             "影像分析": "xray_analysis"
         }
@@ -223,7 +225,7 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
                 ## Bge 模型会超过1
                 score_threshold = st.slider("知识匹配分数阈值：", 0.0, 2.0, float(SCORE_THRESHOLD), 0.01)
 
-        elif dialogue_mode == "搜索引擎问答":
+        elif dialogue_mode == "医疗问答-搜索引擎":
             search_engine_list = api.list_search_engines()
             if DEFAULT_SEARCH_ENGINE in search_engine_list:
                 index = search_engine_list.index(DEFAULT_SEARCH_ENGINE)
@@ -350,7 +352,7 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
                     chat_box.update_msg(text, element_index=0)
             chat_box.update_msg(text, element_index=0, streaming=False)
             chat_box.update_msg("\n\n".join(d.get("docs", [])), element_index=1, streaming=False)
-        elif dialogue_mode == "搜索引擎问答":
+        elif dialogue_mode == "医疗问答-搜索引擎":
             chat_box.ai_say([
                 f"正在执行 `{search_engine}` 搜索...",
                 Markdown("...", in_expander=True, title="网络搜索结果", state="complete"),
